@@ -1,0 +1,86 @@
+---
+title: 'Math 189: Homework 1'
+author: "Leah Seseri"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Question 1
+
+```{r}
+# read in csv file
+mtcars <- read.csv("mtcars.csv", row.names = 1)
+
+# find sample mean and variance for all variables
+summary_stats <- data.frame(
+  Mean = sapply(mtcars, mean),
+  Variance = sapply(mtcars, var)
+)
+
+knitr::kable(summary_stats, digits = 3, caption = "Sample Mean and Variance for Each Variable")
+```
+
+### Question 2
+```{r}
+# find sample variance-covariance matrix
+cov_matrix <- cov(mtcars)
+
+# find sample correlation matrix
+cor_matrix <- cor(mtcars)
+
+knitr::kable(cov_matrix, digits = 3, caption = "Variance-Covariance Matrix")
+knitr::kable(cor_matrix, digits = 3, caption = "Correlation Matrix")
+```
+The variance-covariance matrix shows how the variables vary. The diagonal represents the variance of each individual variable, while the off-diagonal elements highlight how much two variables change together.
+The correlation matrix standardizes the covariance matrix with values between -1 and 1, making it easier to compare the variables. For instance, there is a strong negative correlation between wt (weight) and mpg (miles per gallon) suggesting that heavier cars tend to be less efficient than lighter cars as they use more fuel to travel the same distance. 
+
+### Question 3
+```{r}
+# extract variables from dataset
+mpg <- mtcars$mpg
+weight <- mtcars$wt
+
+# plot weight and miles per gallon
+plot(weight, mpg, 
+     main = 'Relationship Between Car Weight and Miles Per Gallon', 
+     xlab = 'Weight', 
+     ylab = 'Miles per Gallon',
+     pch = 19)
+grid()
+```
+
+### Question 4
+```{r}
+# extract variable from dataset
+cylinders <- mtcars$cyl
+
+# plot weight and miles per gallon and number of cylinders
+plot(weight, mpg, 
+     main = 'Relationship Between Car Weight and Miles Per Gallon', 
+     xlab = 'Weight', 
+     ylab = 'Miles per Gallon', 
+     col = as.factor(cylinders),
+     pch = 19)
+grid()
+
+# add legend to label cylinders
+legend("topright", legend = levels(factor(cylinders)), 
+       fill = 1:length(levels(factor(cylinders))), 
+       title = "Number of Cylinders")
+  
+```
+
+### Question 5
+```{r}
+# pairwise scatter plot
+pairs(mtcars, 
+      main = "Pairwise Scatter Plot of All Variables", 
+      pch = 19)    
+```
+
+### Question 6
+According to the plot draw in question 4, my opinion on the suggestion that the relationship between weight and miles per gallon is subject to the number of cylinders is that it seems accurate. While overall there is a negative correlation between miles per gallon and weight, when comparing between cylinders, cars with four cylinders have a stronger correlation than cars with six cylinders. Thus, since there appears to be a difference in the slopes for cars with different amounts of cylinders, then the relationship between weight and miles per gallon could depend on the number of cylinders.
+
