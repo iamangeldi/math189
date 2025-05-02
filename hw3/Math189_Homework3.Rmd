@@ -1,0 +1,20 @@
+---
+title: "Math189 Homework3"
+author: "Leah Seseri"
+date: "2025-05-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1:
+
+### Question 1:
+```{r}
+water <- read.table("Water.txt", fileEncoding = "UTF-16LE", header = TRUE)
+t.test(water$bottom, water$surface, paired=TRUE)
+```
+### Question 2:
+The assumption of homoskedasticity is that for a two-sample test, the data from all groups have a common variance. So, if this assumption was violated and the the two groups have unequal variances then using this two-sample t-test that assumes equal variances would lead to wrong conclusions and could cause Type one errors where the null hypothesis is rejected when it is actually true. Also, Type two errors could increase where real differences could go undetected and incorrect confidence intervals could occur. Thus, if this assumption was violated a standard t-test is not reliable to produce accurate results.
