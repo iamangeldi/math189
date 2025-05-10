@@ -1,0 +1,75 @@
+---
+title: "Math189_Homework4"
+author: "Leah Seseri"
+date: "2025-05-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1:
+
+### Part 1:
+```{r}
+library(ISLR)
+data("Auto")
+
+mpg_median <- median(Auto$mpg)
+mpg01 <- ifelse(Auto$mpg > mpg_median, 1, 0)
+df <- data.frame(mpg01 = mpg01, Auto)
+head(df)
+```
+
+### Part 2:
+```{r}
+# compare with cylinders
+boxplot(cylinders ~ mpg01, data = df, main = "cylinders vs. mpg01", col = "lightblue")
+```
+```{r}
+# compare with displacement
+boxplot(displacement ~ mpg01, data = df, main = "displacement vs. mpg01", col = "lightgreen")
+```
+
+```{r}
+# compare with horsepower
+boxplot(horsepower ~ mpg01, data = df, main = "horsepower vs. mpg01", col = "lightcoral")
+```
+
+```{r}
+# compare with weight
+boxplot(weight ~ mpg01, data = df, main = "weight vs. mpg01", col = "lightyellow")
+```
+
+```{r}
+# compare with acceleration
+boxplot(acceleration ~ mpg01, data = df, main = "acceleration vs. mpg01", col = "lightpink")
+```
+```{r}
+# compare with year
+boxplot(year ~ mpg01, data = df, main = "year vs. mpg01", col = "lavender")
+```
+```{r}
+# compare with origin
+barplot(table(df$origin, df$mpg01),
+        beside = TRUE, col = c("steelblue", "orange", "darkgreen"),
+        main = "origin vs. mpg01")
+```
+
+Based on the boxplots I created to compare the different features with mpg01, the feature that seems to most likely be useful in predicting mpg01 is cylinders because there is a drastic difference between the cylinders for cars that have an mpg01 of 1 that is higher than the median compared to those with 0 and have a slower mpg. It appears that displacement, weight, and horsepower could also be useful in predicting mpg01 as it appears that cars that have a lower mpg tend to have higher displacement, weight, and horsepower than those with a higher mpg. Also, origin could have an impact on predicting mpg because based on the barplot, it seems that the some regions have more cars with lower mpg than other regions.
+
+### Part 3:
+```{r}
+set.seed(123)
+
+# training set of size 300 so test set to size 92
+train_indices <- sample(1:nrow(df), 300)
+
+train <- df[train_indices, ]
+test <- df[-train_indices, ]
+```
+
+### Part 4:
+
+### Part 5:
