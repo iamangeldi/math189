@@ -1,0 +1,332 @@
+---
+title: "Discussion Week 8"
+output: html_document
+date: "2025-05-18"
+---
+
+# Part 1 Nonlinear Decision Boundary
+
+In this exercise, we explore a nonlinear decision boundary formed by an **ellipse**. 
+
+## Classification with an Elliptical Boundary
+
+We consider the ellipse defined by:
+\[
+\frac{(X_1 + 2)^2}{4} + \frac{(X_2 - 3)^2}{16} = 1
+\]
+This corresponds to an ellipse centered at \((-2, 3)\), with:
+
+- Semi-minor axis length \(2\) along the \(X_1\)-direction
+
+- Semi-major axis length \(4\) along the \(X_2\)-direction
+
+### Visualizing the Boundary
+
+Sketch the curve
+\[
+\frac{(X_1 + 2)^2}{4} + \frac{(X_2 - 3)^2}{16} = 1
+\]
+
+```{r}
+# Define center and axis lengths
+h <- -2     # center x
+k <- 3      # center y
+a <- 2      # semi-minor axis (horizontal, along X1)
+b <- 4      # semi-major axis (vertical, along X2)
+
+# Generate ellipse points parametrically
+theta <- seq(0, 2 * pi, length.out = 100)
+x_ellipse <- h + a * cos(theta)
+y_ellipse <- k + b * sin(theta)
+
+# Plot the ellipse
+plot(x_ellipse, y_ellipse, type = "l", asp = 1, col = "black",
+     xlab = "X1", ylab = "X2", xlim = c(-6, 2), ylim = c(-2, 8),
+     main = "Ellipse Classifier Decision Boundary")
+
+# Fill the ellipse
+polygon(x_ellipse, y_ellipse, col = "lightgray", border = NA)
+lines(x_ellipse, y_ellipse, lwd = 2)
+
+
+```
+
+
+The region where  
+  \[
+  \frac{(X_1 + 2)^2}{4} + \frac{(X_2 - 3)^2}{16} \leq 1
+  \]  
+  is the **interior** of the ellipse.
+  
+ The region where  
+  \[
+  \frac{(X_1 + 2)^2}{4} + \frac{(X_2 - 3)^2}{16} > 1
+  \]  
+  is the **exterior** of the ellipse.
+
+## Classifying Observations
+
+We define a classifier as follows:
+
+- Assign to the **blue** class if  
+  \[
+  \frac{(X_1 + 2)^2}{4} + \frac{(X_2 - 3)^2}{16} > 1
+  \]
+
+- Assign to the **red** class if  
+  \[
+  \frac{(X_1 + 2)^2}{4} + \frac{(X_2 - 3)^2}{16} \leq 1
+  \]
+  
+  Determine the class of each observation: (–2, 3), (0, 3) , (-4, 7), (-2,-1).
+  
+```{r}
+# Observations to classify
+points_to_check <- data.frame(
+  X1 = c(-2, 0, -4, -2),
+  X2 = c(3, 3, 7, -1)
+)
+
+# Compute decision function values
+decision_values <- ((points_to_check$X1 - h)^2) / a^2 + ((points_to_check$X2 - k)^2) / b^2
+classes <- ifelse(decision_values <= 1, "red", "blue")
+
+classes
+```
+  
+# Part 2 Support Vector Machines (SVMs) 
+
+
+## Dataset Introduction: OJ (Orange Juice Purchases)
+
+The `OJ` dataset comes from a supermarket marketing study that tracks customer purchases of orange juice.  
+The main goal is to predict whether a customer buys the **Citrus Hill (CH)** brand or the **Minute Maid (MM)** brand based on various features related to price, promotions, and brand loyalty.
+
+This dataset contains **1,070 observations**, each representing a single purchase event.  
+The response variable is `Purchase`, which indicates whether the customer chose `"CH"` or `"MM"`.
+
+Key predictor variables include:
+- `PriceCH`, `PriceMM`: The price of Citrus Hill and Minute Maid at the time of purchase  
+- `DiscCH`, `DiscMM`: The dollar discount applied to each brand  
+- `LoyalCH`: A score reflecting the customer's loyalty to Citrus Hill  
+- `SpecialCH`, `SpecialMM`: Indicators for whether the brand was on a special display  
+- `PctDiscCH`, `PctDiscMM`: Discounts expressed as a percentage of the original price  
+- `StoreID`, `STORE`: Identifiers for the store where the purchase was made  
+- `WeekofPurchase`: The week number in which the purchase occurred
+
+
+```{r}
+library(ISLR2)
+data(OJ)
+head(OJ)
+str(OJ)
+attach(OJ)
+```
+
+
+### Split the Data into Training and Test Sets
+```{r}
+set.seed(1)
+n<-length(Purchase)
+train = sample(1 : n, size = 800) 
+test = (-train)
+
+##
+trainset<-OJ[train,]
+testset<-OJ[test,]
+```
+
+### Fit a Linear SVM with Cost = 0.01
+
+```{r}
+library(e1071)
+svmfit <- svm( Purchase ~., data=OJ,subset = train, kernel = 'linear', cost = 0.01, scale = FALSE)
+summary(svmfit)
+```
+
+### Evaluate Performance on Training and Test Sets
+
+```{r}
+ypred <- predict(svmfit, OJ)
+
+train.error <- mean(ypred[train] != Purchase[train])
+train.error
+test.error<- mean(ypred[test] != Purchase[test])
+test.error
+```
+
+### Tune the Cost Parameter for the Linear Kernel
+
+```{r}
+tune.out<- tune(svm, Purchase ~., data=OJ[train,], kernel = 'linear', ranges = list(cost = c(0.01,0.1,1,5,10)) ,scale=FALSE)
+
+summary(tune.out)
+tune.out$best.parameters
+```
+### Re-fit the Best Model from Tuning
+
+```{r}
+bestmod <- tune.out$best.model
+summary(bestmod)
+
+ypred <- predict(bestmod, OJ)
+
+train.error <- mean(ypred[train] != Purchase[train])
+train.error
+test.error<- mean(ypred[test] != Purchase[test])
+test.error
+```
+
+
+### Fit an SVM with Radial Kernel
+
+```{r}
+tune.gaussian <- tune(
+  svm, 
+  Purchase ~.,
+  data=OJ[train,], 
+  kernel = "radial",
+  ranges = list(
+    cost = c(0.1, 0.5, 1, 1.5, 2, 5),
+    gamma = c(0.1, 0.5, 1, 1.5, 2)
+  ),
+  scale = FALSE
+)
+
+# Show tuning results
+summary(tune.gaussian)
+
+# Extract best model
+bestmod.gaussian <- tune.gaussian$best.model
+summary(bestmod.gaussian)
+
+
+
+
+ypred <- predict(bestmod.gaussian, OJ)
+
+train.error <- mean(ypred[train] != Purchase[train])
+train.error
+test.error<- mean(ypred[test] != Purchase[test])
+test.error
+
+
+```
+
+### Fit an SVM with Polynomial Kernel (Degree 2)
+
+```{r}
+svmpfit <- svm( Purchase ~., data=OJ,subset = train, kernel = 'polynomial', degree=2, cost = 0.01,scale = FALSE)
+summary(svmpfit)
+
+ypred <- predict(svmpfit, OJ)
+
+train.error <- mean(ypred[train] != Purchase[train])
+train.error
+test.error<- mean(ypred[test] != Purchase[test])
+test.error
+
+
+```
+
+
+### Visualize the Linear SVM Decision Boundary with Two Predictors
+
+
+We define `PriceDiff = PriceCH - PriceMM`.
+
+```{r}
+
+# Create PriceDiff variable
+OJ$PriceDiff <- OJ$PriceCH - OJ$PriceMM
+
+# Subset training data using two predictors and the target
+data.train.2d <- OJ[train, c("Purchase", "LoyalCH", "PriceDiff")]
+data.train.2d$LoyalCH <- as.numeric(data.train.2d$LoyalCH)
+data.train.2d$PriceDiff <- as.numeric(data.train.2d$PriceDiff)
+data.train.2d$Purchase <- as.factor(data.train.2d$Purchase)
+
+# Fit linear SVM using only the two predictors
+bestmod.linear <- svm(Purchase ~ LoyalCH + PriceDiff,
+                      data = data.train.2d,
+                      kernel = "linear",
+                      cost = 0.1,     
+                      scale = FALSE)
+
+# Plot the decision boundary
+plot(bestmod.linear, data.train.2d)
+
+```
+
+```{r}
+### Plot Decision Boundary on Test Set 
+
+# Ensure correct data types
+data.test.2d <- OJ[test, c("Purchase", "LoyalCH", "PriceDiff")]
+data.test.2d$LoyalCH <- as.numeric(data.test.2d$LoyalCH)
+data.test.2d$PriceDiff <- as.numeric(data.test.2d$PriceDiff)
+data.test.2d$Purchase <- as.factor(data.test.2d$Purchase)
+
+# Predict classes on test set
+test_preds <- predict(bestmod.linear, newdata = data.test.2d)
+
+plot(bestmod.linear, data.test.2d)
+
+```
+
+| Symbol         | Meaning                                      |
+|----------------|----------------------------------------------|
+| **Red circle (o)**   | True class = `"CH"`, predicted correctly         |
+| **Black circle (o)** | True class = `"MM"`, predicted correctly         |
+| **Red X (x)**        | True class = `"CH"`, predicted incorrectly       |
+| **Black X (x)**      | True class = `"MM"`, predicted incorrectly       |
+
+
+### ROC Curves: Linear vs. Gaussian SVM on the OJ Dataset
+```{r}
+library(ROCR)
+
+# Define a function for plotting ROC curves
+rocplot <- function(pred, truth, ...) {
+  pred_obj <- prediction(pred, truth)
+  perf <- performance(pred_obj, "tpr", "fpr")
+  plot(perf, ...)
+}
+```
+
+
+```{r}
+# Compute decision values from the linear SVM on training data
+fitted.linear.train <- attributes(
+  predict(bestmod.linear, OJ[train, ], decision.values = TRUE)
+)$decision.values
+
+# Compute decision values from the radial SVM on training data
+fitted.gaussian.train <- attributes(
+  predict(bestmod.gaussian, OJ[train, ], decision.values = TRUE)
+)$decision.values
+
+# Plot ROC curves for training data
+par(mfrow = c(1, 2))
+rocplot(-fitted.linear.train, OJ$Purchase[train], main = "Training Data", col = "red")
+rocplot(-fitted.gaussian.train, OJ$Purchase[train], add = TRUE, col = "blue")
+legend("bottomright", legend = c("Linear SVM", "Gaussian SVM"),
+       col = c("red", "blue"), lty = 1, cex = 0.8)
+
+# Compute decision values from the linear SVM on test data
+fitted.linear.test <- attributes(
+  predict(bestmod.linear, OJ[test,], decision.values = TRUE)
+)$decision.values
+
+# Compute decision values from the radial SVM on test data
+fitted.gaussian.test <- attributes(
+  predict(bestmod.gaussian, OJ[test, ], decision.values = TRUE)
+)$decision.values
+
+# Plot ROC curves for test data
+rocplot(-fitted.linear.test, OJ$Purchase[test], main = "Test Data", col = "red")
+rocplot(-fitted.gaussian.test,  OJ$Purchase[test], add = TRUE, col = "blue")
+legend("bottomright", legend = c("Linear SVM", "Gaussian SVM"),
+       col = c("red", "blue"), lty = 1, cex = 0.8)
+```
+
